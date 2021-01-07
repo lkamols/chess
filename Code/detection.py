@@ -50,7 +50,9 @@ class Detection:
     def __init__(self):
         self._init_mux()
         self._init_decoder()
-        self._board = [[0]*12]*8
+        self._board = []
+        for i in range(8):
+            self._board += [[0]*12]
       
     """
     initialise the mux to be all set as outputs
@@ -116,12 +118,10 @@ class Detection:
         global _board
         for row in range(8):
             self.set_decoder(row)
-            row_vals = [0]*12
             for mux_val in range(6):
                 self.set_mux(mux_val)
-                row_vals[mux_val] = read_input(self._m1_out)
-                row_vals[mux_val + 6] = read_input(self._m2_out)
-            self._board[row] = row_vals
+                self._board[row][mux_val] = read_input(self._m1_out)
+                self._board[row][mux_val + 6] = read_input(self._m2_out)
 
 if __name__ == "__main__":
     det = Detection()
