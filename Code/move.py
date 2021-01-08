@@ -24,18 +24,31 @@ class Move:
     the move as a string
     """
     def short_representation(self):
-        return pos_to_square(self.piece.get_row(), self.piece.get_col()) + \
+        string = pos_to_square(self.start_row, self.start_col) + \
                 pos_to_square(self.end_row, self.end_col)
+        #then if there is a promotion, dictate which promotion it is
+        if self.promotion != None:
+            string += self.promotion
+        return string
+
+    """
+    create a duplicate move instance
+    """
+    def duplicate(self):
+        return Move(self.piece, self.start_row, self.start_col, self.end_row, self.end_col,
+                self.kill, self.en_passant, self.castle, self.promotion)
 
     """
     full move information as a string
     """
     def to_string(self):
-        ret = "%s at %s " % (self.piece.get_name(), pos_to_square(self.start_row, self.end_row))
+        ret = "%s at %s " % (self.piece.get_name(), pos_to_square(self.start_row, self.start_col))
         if self.kill == None:
             ret += "moves to "
         else:
-            ret += "kills %s at " % (self.kill.get_name())
+            ret += "kills %s at " % self.kill.get_name()
         ret += pos_to_square(self.end_row, self.end_col)
+        if self.promotion != None:
+            ret += " promoting to %s " % self.promotion
         ret += " (%s)" % self.short_representation()
         return ret

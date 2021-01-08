@@ -57,6 +57,12 @@ class Piece(ABC):
         return self._letter
 
     """
+    change the type of the piece, used for promoting pawns
+    """
+    def set_letter(self, letter):
+        self._letter = letter
+
+    """
     get the shorthand identifier of the piece
     """
     def get_name(self):
@@ -182,7 +188,17 @@ class Piece(ABC):
                     possibles += [Move(self, self._row, self._col, 
                             self._row + direction, attacked_col, kill=previous_move.piece)]
         #ALSO NEED TO HANDLE PROMOTIONS HERE, NEED TO ADD MULTIPLE MOVES IN HERE
-        return possibles
+        #next handle the possibility of promotion
+        if len(possibles) != 0 and possibles[0].end_row in [0,7]:
+            promotions = []
+            for move in possibles:
+                for option in ["r", "n", "q", "b"]: #any promotion can be to 4 different pieces
+                    new_move = move.duplicate()
+                    new_move.promotion = option
+                    promotions += [new_move]
+            return promotions
+        else: #there was no promotions, don't need to flesh it out, just accept it
+            return possibles
 
     """
     return all possible moves, does not fully check for legality of moves

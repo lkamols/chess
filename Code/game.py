@@ -45,6 +45,9 @@ class Game:
             #then update the board with the move made
             self._b.execute_move(selected_move)
 
+            #say whether we are in check or not
+            if self._b.is_check(self._turn):
+                print("Check!")
 
             #switch player
             self._turn = 1 - self._turn

@@ -145,9 +145,13 @@ class Board:
         self._board[move.start_row][move.start_col] = None
         #then update the piece's own knowledge of its position
         move.piece.move_to(move.end_row, move.end_col)
+        #check for a promotion, and if there is a promotion, change the piece
+        if move.promotion != None:
+            move.piece.set_letter(move.promotion)
         #if it's a kill, remove the killed piece from the game
         if move.kill != None:
             move.kill.set_alive(False)
+            self._board[move.kill.get_row()][move.kill.get_col()] = None
         #then update the board's knowledge of the piece
         self._board[move.end_row][move.end_col] = move.piece
 
@@ -162,6 +166,9 @@ class Board:
         self._board[move.end_row][move.end_col] = None
         #then update the pieces own knowledge of the board
         move.piece.move_to(move.start_row, move.start_col, undo=True)
+        #if the piece was promoted, undo the promotion
+        if move.promotion != None:
+            move.piece.set_letter('p') #return it to being a pawn
         #if a piece was killed by this move, resurrect it
         if move.kill != None:
             move.kill.set_alive(True)
@@ -249,20 +256,5 @@ class Board:
             if move.kill != None and move.kill.get_index() == KING_ID:
                 return True
         return False
-
-
-if __name__ == "__main__":
-    b = Board()
-    b.print_board()
-    b.print_pieces()
-    b.print_all_possible_moves(WHITE)
-    print(b.all_possible_moves_dict(BLACK))
-    """
-    p = b._pieces[0][2]
-    moves = p.possible_moves(b)
-    b.execute_move(moves[0])
-    b.print_board()
-    b.print_pieces()
-    """
 
 
