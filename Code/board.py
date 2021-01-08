@@ -23,8 +23,7 @@ class Board:
         #then load in all the pieces
         self._load_pieces()
         self._load_board()
-        self._en_passant_col = NO_PASSANT #tracker for if there is a double moved pawn just previously
-
+        self._moves = [] #track all the moves that have taken place
 
     """
     populate the board with the starting pieces
@@ -40,14 +39,14 @@ class Board:
                 self._pieces[colour] += [Piece(colour, "p", col, pawn_row, col)]
             #then add the other pieces
             base_row = row_conv(colour, 0)
-            self._pieces[colour] += [Piece(colour, "r",  8, base_row, 0)]
-            self._pieces[colour] += [Piece(colour, "n",  9, base_row, 1)]
-            self._pieces[colour] += [Piece(colour, "b", 10, base_row, 2)]
-            self._pieces[colour] += [Piece(colour, "q", 11, base_row, 3)]
-            self._pieces[colour] += [Piece(colour, "k", 12, base_row, 4)]
-            self._pieces[colour] += [Piece(colour, "b", 13, base_row, 5)]
-            self._pieces[colour] += [Piece(colour, "n", 14, base_row, 6)]
-            self._pieces[colour] += [Piece(colour, "r", 15, base_row, 7)]
+            self._pieces[colour] += [Piece(colour, "r", ROOK1_ID, base_row, 0)]
+            self._pieces[colour] += [Piece(colour, "n", KNIGHT1_ID, base_row, 1)]
+            self._pieces[colour] += [Piece(colour, "b", BISHOP1_ID, base_row, 2)]
+            self._pieces[colour] += [Piece(colour, "q", QUEEN_ID, base_row, 3)]
+            self._pieces[colour] += [Piece(colour, "k", KING_ID, base_row, 4)]
+            self._pieces[colour] += [Piece(colour, "b", BISHOP2_ID, base_row, 5)]
+            self._pieces[colour] += [Piece(colour, "n", KNIGHT2_ID, base_row, 6)]
+            self._pieces[colour] += [Piece(colour, "r", ROOK2_ID, base_row, 7)]
 
     """
     given all the pieces, position them on the board
@@ -114,6 +113,16 @@ class Board:
         else:
             return self._board[row][col]
 
+    """
+    returns the most recent move made on the board, this is important
+    for en passant
+    returns None if there is no last move (i.e we are at the first move)
+    """
+    def last_move(self):
+        if len(self._moves) > 0:
+            return self._moves[-1]
+        else:
+            return None
 
     """
     return the piece of the given colour and index
@@ -133,23 +142,61 @@ class Board:
     """
     def execute_move(self, move):
         #first remove the piece from the board
-        self._board[move.piece.get_row()][move.piece.get_col()] = None
+        self._board[move.start_row][move.start_col] = None
         #then update the piece's own knowledge of its position
         move.piece.move_to(move.end_row, move.end_col)
         #if it's a kill, remove the killed piece from the game
-        if (move.kill):
-            killed_piece = self._board[move.end_row][move.end_col]
-            killed_piece.set_alive(False)
-            #remove the killed piece from the known pieces, never to return
-            self._pieces[killed_piece.get_colour()][killed_piece.get_index()] = None
+        if move.kill != None:
+            move.kill.set_alive(False)
         #then update the board's knowledge of the piece
         self._board[move.end_row][move.end_col] = move.piece
 
-        #handle the en passant memory
-        if move.piece.get_letter() == "p" and abs(move.piece.get_row() - move.end_col) == 2:
-            self._en_passant_col = move.piece.index
-        else:
-            self._en_passant_col = NO_PASSANT
+        self._moves += [move]
+
+    """
+    undoes a move, updating the board to the state it was before the move
+    """
+    def undo_move(self):
+        move = self.last_move()
+        #first remove the piece from the board at it's current location
+        self._board[move.end_row][move.end_col] = None
+        #then update the pieces own knowledge of the board
+        move.piece.move_to(move.start_row, move.start_col, undo=True)
+        #if a piece was killed by this move, resurrect it
+        if move.kill != None:
+            move.kill.set_alive(True)
+            self._board[move.kill.get_row()][move.kill.get_col()] = move.kill
+        #place the piece back where it started
+        self._board[move.start_row][move.start_col] = move.piece
+        #remove the move from the list of moves
+        self._moves.pop() 
+
+    """
+    returns all LEGAL moves a player can make, this is different from possible
+    moves, in that this does not allow a player to move into check
+    """
+    def all_legal_moves(self, colour):
+        legal_moves = []
+        for piece in self._pieces[colour]:
+            if piece.is_alive():
+                legal_moves += piece.legal_moves(self)
+        return legal_moves
+
+    """
+    determines if a given move is LEGAL, slightly different from possible,
+    in that it determines whether this move ends up in check
+    """
+    def is_move_legal(self, move):
+        #first try executing the move
+        self.execute_move(move)
+        #then evaluate whether the other player now has check
+        legal = True
+        if self.is_check(1 - move.piece.get_colour()):
+            legal = False
+        #then undo the fake move
+        self.undo_move()
+        return legal
+
 
     """
     returns all possible moves that can be made by a colour
@@ -162,6 +209,18 @@ class Board:
         return all_moves
 
     """
+    returns all legal moves that can be made by a colour,
+    linked to a dictionary associated with the UCI handle
+    """
+    def all_legal_moves_dict(self, colour):
+        all_moves = self.all_legal_moves(colour)
+        #construct a dictionary using the shorthands
+        d = {}
+        for move in all_moves:
+            d[move.short_representation()] = move
+        return d
+
+    """
     prints all possible moves that can be made by a colour
     """
     def print_all_possible_moves(self, colour):
@@ -169,12 +228,35 @@ class Board:
         for move in all_moves:
             print(move.to_string())
 
+    """
+    prints all the legal moves that can be made by a colour
+    """
+    def print_all_legal_moves(self, colour):
+        legal_moves = self.all_legal_moves(colour)
+        for move in legal_moves:
+            print(move.to_string())
+
+    """
+    determines whether the given colour could kill the king in one move
+    with the current board
+    checking works with possible moves, not legal moves, as check basically
+    defines a legal move, and working with legal moves would infinite loop
+    """
+    def is_check(self, colour):
+        all_moves = self.all_possible_moves(colour)
+        #check all moves for potential king kills
+        for move in all_moves:
+            if move.kill != None and move.kill.get_index() == KING_ID:
+                return True
+        return False
+
 
 if __name__ == "__main__":
     b = Board()
     b.print_board()
     b.print_pieces()
     b.print_all_possible_moves(WHITE)
+    print(b.all_possible_moves_dict(BLACK))
     """
     p = b._pieces[0][2]
     moves = p.possible_moves(b)

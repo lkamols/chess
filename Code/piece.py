@@ -13,7 +13,7 @@ class Piece(ABC):
         self._colour = colour
         self._index = index
         self._letter = piece
-        self._moved = False
+        self._moves = 0
         self._alive = True
         self._row = row
         self._col = col
@@ -24,8 +24,8 @@ class Piece(ABC):
     def get_index(self):
         return self._index
 
-    def get_moved(self):
-        return self._moved
+    def has_moved(self):
+        return self._moves != 0
 
     def get_pos(self):
         return self._row, self._col
@@ -42,10 +42,13 @@ class Piece(ABC):
     def is_alive(self):
         return self._alive
 
-    def move_to(self, row, col):
+    def move_to(self, row, col, undo=False):
         self._row = row
         self._col = col
-        self._moved = True
+        if undo:
+            self._moves -= 1
+        else:
+            self._moves += 1
 
     """
     get the letter used to describe the piece
@@ -83,9 +86,9 @@ class Piece(ABC):
                 break
             elif colour == NO_COLOUR:
                 #if there is no piece there, we can move there
-                possibles += [Move(self, row, col, kill=NO_KILL)]
+                possibles += [Move(self, self._row, self._col, row, col, kill=None)]
             else: #there is a piece of the opposite colour there
-                possibles += [Move(self, row, col, kill=board.piece_at_square(row, col))]
+                possibles += [Move(self, self._row, self._col, row, col, kill=board.piece_at_square(row, col))]
                 #we also cannot keep moving along this path
                 break
         return possibles
@@ -107,7 +110,46 @@ class Piece(ABC):
         for dr, dc in [(0,1), (0,-1), (-1,0), (1, 0)]:
             possibles += self._moves_along_direction(board, dr, dc)
         return possibles
+
+    """
+    determine if moving a set distance is allowed.
+    if so, return a list containing just the move
+    else return an empty list
+    dr - distance moved in rows
+    dc - distance moved in cols
+    """
+    def _test_move(self, board, dr, dc):
+        new_row = self._row + dr
+        new_col = self._col + dc
+        end_square_colour = board.colour_at_square(new_row, new_col)
+        if end_square_colour == self._colour or end_square_colour == OFF_BOARD:
+            return []
+        elif end_square_colour == NO_PIECE:
+            return [Move(self, self._row, self._col, new_row, new_col, kill=None)]
+        else:
+            return [Move(self, self._row, self._col, new_row, new_col, kill=board.piece_at_square(new_row, new_col))]
    
+    """
+    determine all the possible moves for the knight
+    """
+    def _knight_moves(self, board):
+        possibles = []
+        for dr, dc in [(2,1), (2,-1), (-2,1), (-2,-1), (1,2), (1,-2), (-1,2), (-1,-2)]:
+            possibles += self._test_move(board, dr, dc)
+        return possibles
+
+    """
+    determine all possible moves for the king
+    """
+    def _king_moves(self, board):
+        possibles = []
+        for dr in [-1,0,1]:
+            for dc in [-1,0,1]:
+                if dr != 0 or dc != 0:
+                    possibles += self._test_move(board, dr, dc)
+        #ADD CASTLING IN HERE
+        return possibles
+
     """
     returns all possible moves for this piece as a pawn
     """
@@ -118,23 +160,28 @@ class Piece(ABC):
         new_row = self._row + direction
         #can we move directly forward?
         if board.colour_at_square(new_row, self._col) == NO_COLOUR:
-            possibles += [Move(self, new_row, self._col, kill=NO_KILL)]
+            possibles += [Move(self, self._row, self._col, new_row, self._col, kill=None)]
             #can we double move forward?
-            if self._moved == False and board.colour_at_square(self._row + 2*direction, self._col) == NO_COLOUR:
-                possibles += [Move(self, self._row + 2*direction, self._col, kill=NO_KILL)]
+            if not self.has_moved() and board.colour_at_square(self._row + 2*direction, self._col) == NO_COLOUR:
+                possibles += [Move(self, self._row, self._col, self._row + 2*direction, self._col, kill=None)]
         #next check for the ability to capture on the diagonal
         for side in [1,-1]:
             new_col = self._col + side
             if board.colour_at_square(new_row, new_col) == 1 - self._colour: #the other colour
-                possibles += [Move(self, new_row, new_col, kill=board.piece_at_square(new_row, new_col))]
+                possibles += [Move(self, self._row, self._col, new_row, new_col, kill=board.piece_at_square(new_row, new_col))]
         #then check for the fabled en passant
         if ((self._colour == WHITE and self._row == 4) or 
                 (self._colour == BLACK and self._row == 3)):
             for side in [-1,1]:
-                new_col = self._col + side
-                if board.en_passant_col() == new_col:
-                    possibles += [Move(self, new_row, new_col, kill=board.piece_at_square(row, new_col), 
-                                        en_passant=True)]
+                attacked_col = self._col + side
+                previous_move = board.last_move() #this should not be null as we know our pawn has moved
+                #check for if a pawn has moved just ready for the en passant
+                if previous_move.piece.get_letter() == "p" and previous_move.end_row == self._row and \
+                        previous_move.end_col == attacked_col and \
+                        abs(previous_move.start_row - previous_move.end_row) == 2:
+                    possibles += [Move(self, self._row, self._col, 
+                            self._row + direction, attacked_col, kill=previous_move.piece)]
+        #ALSO NEED TO HANDLE PROMOTIONS HERE, NEED TO ADD MULTIPLE MOVES IN HERE
         return possibles
 
     """
@@ -144,11 +191,28 @@ class Piece(ABC):
         #no switch statments in python... :(
         if self._letter == "p": #pawn
             return self._pawn_moves(board)
-        if self._letter == "r": #rook
+        elif self._letter == "r": #rook
             return self._straight_moves(board)
-        if self._letter == "b": #bishop
+        elif self._letter == "b": #bishop
             return self._diagonal_moves(board)
-        if self._letter == "q": #queen
+        elif self._letter == "q": #queen
             return self._straight_moves(board) + self._diagonal_moves(board)
-        #not implemented yet
-        return []
+        elif self._letter == "n": #knight
+            return self._knight_moves(board)
+        elif self._letter == "k": #king
+            return self._king_moves(board)
+        else:
+            raise ValueError("piece not one of defined pieces")
+
+
+    """
+    returns all LEGAL moves, checks for legality of all possible moves
+    """
+    def legal_moves(self, board):
+        possibles = self.possible_moves(board)
+        legals = []
+        for move in possibles:
+            if board.is_move_legal(move):
+                legals += [move]
+        return legals
+
