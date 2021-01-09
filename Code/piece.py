@@ -153,7 +153,23 @@ class Piece(ABC):
             for dc in [-1,0,1]:
                 if dr != 0 or dc != 0:
                     possibles += self._test_move(board, dr, dc)
-        #ADD CASTLING IN HERE
+        #now check for castling, the following criteria must be met for a castle to occur
+        #the king and the rook must not have moved
+        #there must be no pieces inbetween the rook and the king 
+        #(this is 2 spaces kingside, 3 spaces queenside)
+        #the king must not be in check, move through check or into check
+        #(the check based problems are LEGAL problems and should be handled in legality checks not
+        # in with these possible checks)
+        for direction in [-1,1]:
+            #determine which rook, the king starts on the right so positive is kingside castle
+            rookID = ROOKQ_ID if direction == -1 else ROOKK_ID
+            #now check all the criteria
+            if (not self.has_moved() and not board.get_piece(self._colour, rookID).has_moved() and
+                    board.colour_at_square(self._row, self._col + direction) == NO_COLOUR and
+                    board.colour_at_square(self._row, self._col + 2*direction) == NO_COLOUR and
+                    (direction == 1 or board.colour_at_square(self._row, self._col + 3*direction))):
+                #if all the criteria are met, add the castle as a move
+                possibles += [Move(self, self._row, self._col, self._row, self._col + 2*direction, castle=rookID)]
         return possibles
 
     """

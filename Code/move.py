@@ -8,8 +8,18 @@ def pos_to_square(row, col):
 
 class Move:
 
+    """
+    constructor.
+    piece -  the piece being moved
+    start_row/start_col - the starting position of the piece
+    end_row/end_col - the ending position of the piece
+    kill - reference to the piece being killed, None if no kill occurs
+    en_passant - True if this move is an En Passant, false otherwise
+    castle - the ID of the castle if the move is a castle, NO_CASTLE otherwsie
+    promotion - the choice of promotion from "q", "n", "r", "b" if the move is a promotion, None otherwise
+    """
     def __init__(self, piece, start_row, start_col, end_row, end_col, 
-            kill=None, en_passant=False, castle=False, promotion=None):
+            kill=None, en_passant=False, castle=NO_CASTLE, promotion=None):
         self.piece = piece
         self.start_row = start_row
         self.start_col = start_col
@@ -50,5 +60,7 @@ class Move:
         ret += pos_to_square(self.end_row, self.end_col)
         if self.promotion != None:
             ret += " promoting to %s " % self.promotion
+        elif self.castle != NO_CASTLE:
+            ret += " by castling "
         ret += " (%s)" % self.short_representation()
         return ret

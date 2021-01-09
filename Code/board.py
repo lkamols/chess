@@ -39,14 +39,14 @@ class Board:
                 self._pieces[colour] += [Piece(colour, "p", col, pawn_row, col)]
             #then add the other pieces
             base_row = row_conv(colour, 0)
-            self._pieces[colour] += [Piece(colour, "r", ROOK1_ID, base_row, 0)]
-            self._pieces[colour] += [Piece(colour, "n", KNIGHT1_ID, base_row, 1)]
-            self._pieces[colour] += [Piece(colour, "b", BISHOP1_ID, base_row, 2)]
+            self._pieces[colour] += [Piece(colour, "r", ROOKQ_ID, base_row, 0)]
+            self._pieces[colour] += [Piece(colour, "n", KNIGHTQ_ID, base_row, 1)]
+            self._pieces[colour] += [Piece(colour, "b", BISHOPQ_ID, base_row, 2)]
             self._pieces[colour] += [Piece(colour, "q", QUEEN_ID, base_row, 3)]
             self._pieces[colour] += [Piece(colour, "k", KING_ID, base_row, 4)]
-            self._pieces[colour] += [Piece(colour, "b", BISHOP2_ID, base_row, 5)]
-            self._pieces[colour] += [Piece(colour, "n", KNIGHT2_ID, base_row, 6)]
-            self._pieces[colour] += [Piece(colour, "r", ROOK2_ID, base_row, 7)]
+            self._pieces[colour] += [Piece(colour, "b", BISHOPQ_ID, base_row, 5)]
+            self._pieces[colour] += [Piece(colour, "n", KNIGHTQ_ID, base_row, 6)]
+            self._pieces[colour] += [Piece(colour, "r", ROOKQ_ID, base_row, 7)]
 
     """
     given all the pieces, position them on the board
@@ -194,6 +194,9 @@ class Board:
     in that it determines whether this move ends up in check
     """
     def is_move_legal(self, move):
+        #do a couple of preliminary checks for castling
+        if move.castle != NO_CASTLE and self.castle_checks(move) == False:
+            return False #we cannot perform this castle, even if it ends legally
         #first try executing the move
         self.execute_move(move)
         #then evaluate whether the other player now has check
@@ -204,6 +207,28 @@ class Board:
         self.undo_move()
         return legal
 
+    """
+    additional checks for if a castle is legal, checks for:
+    - if the king is currently in check
+    - if the king would move through check
+    """
+    def castle_checks(self, move):
+        #check that the king isn't currently in check
+        if self.is_check(1 - move.piece.get_colour()):
+            return False
+        #generate a fake move to see if the king moves through check
+        #the location of this can be determined by if we are doing a kingside
+        #or queenside castle
+        if move.castle == ROOKQ_ID:
+            move_through = Move(move.piece, move.start_row, move.start_col,
+                    move.end_row, move.start_col - 1)
+        elif move.castle == ROOKK_ID:
+            move_through = Move(move.piece, move.start_row, move.start_col,
+                    move.end_row, move.start_col + 1)
+        else:
+            raise ValueError("should not check castling when the move is not a castle")
+        #then check if we move through check
+        return self.is_move_legal(move_through)
 
     """
     returns all possible moves that can be made by a colour
