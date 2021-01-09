@@ -1,6 +1,6 @@
 from piece import *
 from constants import *
-from move import Move
+from move import Move, pos_to_square
 
 """
 decides the row based on the colour, inverts black
@@ -85,6 +85,86 @@ class Board:
                     print("colour:%d index:%d piece:%s row:%d col:%d" %
                             (colour, i, piece.get_name(), piece.get_row(), piece.get_col()))
 
+    """
+    returns the number of moves it has been since a pawn moved forward or a capture,
+    required for the 50 turn rule
+    """
+    def half_moves_since_event(self):
+        count = 0
+        while count < len(self._moves):
+            move = self._moves[-1 - count]
+            if move.piece.get_letter() == "p" or move.kill != None:
+                break
+            count += 1
+        return count
+
+    """
+    returns a string containing the entire board information 
+    in FEN (Forsyth-Edwards notation)
+    """
+    def fen(self):
+        fen = ""
+        count = 0
+        #traverse from top to bottom, left to right
+        for row in range(7, -1, -1):
+            for col in range(8):
+                #get the piece at this square
+                piece = self._board[row][col]
+                #then handle if there is a genuine piece there
+                if piece != None:
+                    #check if we have just passed some empty squares
+                    if count != 0:
+                        fen += str(count)
+                        count = 0
+                    fen += piece.get_name()
+                else: #there was no piece here, add to the count
+                    count += 1
+            #through the row, check if there is a remaining count
+            if count != 0:
+                fen += str(count)
+                count = 0
+            #add the slash between rows, unless its the last row
+            if row != 0: 
+                fen += "/"
+        
+        #the next thing in the FEN notation is the player whose turn it is
+        fen += " w " if len(self._moves) == 0 or self.last_move().piece.get_colour() == BLACK else " b "
+
+        #the next part is castling information, relating to whether moves have been made
+        castling = ""
+        if not self._pieces[WHITE][KING_ID].has_moved() and \
+                not self._pieces[WHITE][ROOKK_ID].has_moved():
+            castling += "K"
+        if not self._pieces[WHITE][KING_ID].has_moved() and \
+                not self._pieces[WHITE][ROOKQ_ID].has_moved():
+            castling += "Q"
+        if not self._pieces[BLACK][KING_ID].has_moved() and \
+                not self._pieces[BLACK][ROOKK_ID].has_moved():
+            castling += "k"
+        if not self._pieces[BLACK][KING_ID].has_moved() and \
+                not self._pieces[BLACK][ROOKQ_ID].has_moved():
+            castling += "q"
+        #then if there is no castling we use a "-" instead
+        if castling == "":
+            castling += "-"
+        fen += castling + " "
+
+        #the next piece of information is en passant information
+        last_move = self.last_move()
+        if not len(self._moves) == 0 and last_move.piece.get_letter() == "p" and \
+                abs(last_move.start_row - last_move.end_row) == 2:
+            fen += pos_to_square((last_move.start_row + last_move.end_row)//2, last_move.start_col)
+        else:
+            fen += "-"
+
+        #next we add the number of half moves since last capture or pawn advance for the fifty move rule
+        fen += " %d " % self.half_moves_since_event()
+
+        #finally we add the total turn number we are up to
+        fen += str(len(self._moves)//2 + 1)
+
+        
+        return fen
 
     """
     return the colour of the square located at the given position

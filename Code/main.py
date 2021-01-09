@@ -1,5 +1,5 @@
 from game import Game
-from player import ConsolePlayer
+from player import ConsolePlayer, StockfishPlayer
 from constants import *
 
 if __name__ == "__main__":

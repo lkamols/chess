@@ -24,6 +24,7 @@ class Game:
             #show the display to the terminal if it is wanted
             if self._display:
                 self._b.print_board()
+                print(self._b.fen())
 
             active_player = self._players[self._turn]
             legal_moves = self._b.all_legal_moves_dict(self._turn)
