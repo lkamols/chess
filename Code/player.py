@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from constants import *
 
 """
 abstract class for a player, handles picking moves etc
@@ -32,7 +33,7 @@ class ConsolePlayer(Player):
         #get the user to 
         selection = ""
         while selection not in legal_moves:
-            selection = input("Move: ")
+            selection = input("%s move: " % ("Black" if self._colour == BLACK else "White"))
             if selection == "all":
                 print(board.print_all_legal_moves(self._colour))
         return legal_moves[selection]

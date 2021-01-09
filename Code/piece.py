@@ -42,6 +42,10 @@ class Piece(ABC):
     def is_alive(self):
         return self._alive
 
+    """
+    move the piece to a new (row, col) location
+    undo - set true if the move is an undo (for tracking move numbers)
+    """
     def move_to(self, row, col, undo=False):
         self._row = row
         self._col = col

@@ -138,9 +138,50 @@ class Board:
         return self._en_passant_col
 
     """
+    move the rook with the castle
+    """
+    def castle_rook_move(self, move):
+        #first collect the correct rook to move
+        rook = self._pieces[move.piece.get_colour()][move.castle]
+        #then determine where to move it to
+        if move.castle == ROOKK_ID:
+            end_col = 5
+        elif move.castle == ROOKQ_ID:
+            end_col = 3
+        else:
+            raise ValueError("move is not a castle")
+        #first update the board with that knowledge
+        self._board[rook.get_row()][rook.get_col()] = None
+        self._board[rook.get_row()][end_col] = rook
+        #now update the rook's knowledge of its own position
+        rook.move_to(rook.get_row(), end_col)
+
+    """
+    undoes the rook move associated with a castle
+    """
+    def undo_castle_rook_move(self, move):
+        #first collect the correct rook to move
+        rook = self._pieces[move.piece.get_colour()][move.castle]
+        #then determine where to move it to
+        if move.castle == ROOKK_ID:
+            end_col = 7
+        elif move.castle == ROOKQ_ID:
+            end_col = 0
+        else:
+            raise ValueError("move is not a castle")
+        #first update the board with that knowledge
+        self._board[rook.get_row()][rook.get_col()] = None
+        self._board[rook.get_row()][end_col] = rook
+        #now update the rook's knowledge of its own position
+        rook.move_to(rook.get_row(), end_col, undo=True)
+
+    """
     execute a move, updating the board to reflect the move
     """
     def execute_move(self, move):
+        #check for castling and do the rook moves if so
+        if move.castle != NO_CASTLE:
+            self.castle_rook_move(move)
         #first remove the piece from the board
         self._board[move.start_row][move.start_col] = None
         #then update the piece's own knowledge of its position
@@ -162,6 +203,9 @@ class Board:
     """
     def undo_move(self):
         move = self.last_move()
+        #check for castling and undo the rook move if required
+        if move.castle != NO_CASTLE:
+            self.undo_castle_rook_move(move)
         #first remove the piece from the board at it's current location
         self._board[move.end_row][move.end_col] = None
         #then update the pieces own knowledge of the board
