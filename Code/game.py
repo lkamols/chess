@@ -1,4 +1,4 @@
-from board import Board
+from chessboard import Board
 from constants import *
 
 class Game:
@@ -26,21 +26,28 @@ class Game:
                 self._b.print_board()
 
             active_player = self._players[self._turn]
+
+            #check for any game endings
+            game_ending = self._b.game_end(self._turn)
+            if game_ending == CHECKMATE:
+                print("Checkmate! %s wins!" % ("White" if self._turn == BLACK else "Black"))
+                return CHECKMATE
+            elif game_ending == STALEMATE:
+                print("Stalemate!")
+                return STALEMATE
+            elif game_ending == INSUFFICIENT_MATERIAL:
+                print("Draw by insufficient material")
+                return INSUFFICIENT_MATERIAL
+            elif game_ending == FIFTY_MOVE_RULE:
+                print("Draw by fifty move rule")
+                return FIFTY_MOVE_RULE
+            elif game_ending == REPETITION:
+                print("Draw by repetition")
+                return REPETITION
+            
+            #the game is not over, get the player to select a move
             legal_moves = self._b.all_legal_moves_dict(self._turn)
-
-            #check for if there are no possible moves and the game is over
-            if len(legal_moves) == 0:
-                #must decide if this is checkmate or stalemate
-                if self._b.is_check(1 - self._turn):
-                    print("Checkmate, %s wins!" % ("white" if self._turn == BLACK else "black"))
-                    return self._turn
-                else:
-                    print("Stalemate!")
-                    return STALEMATE
-
-            #get the player to select a move
             selected_move = active_player.make_move(self._b, legal_moves)
-            #need to do some processing here for promotions and castles
 
             #then update the board with the move made
             self._b.execute_move(selected_move)
