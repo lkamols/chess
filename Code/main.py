@@ -4,5 +4,5 @@ from constants import *
 
 if __name__ == "__main__":
     while(1):
-        g = Game(ConsolePlayer(WHITE), ConsolePlayer(BLACK))
+        g = Game(StockfishPlayer(WHITE, rating=4), StockfishPlayer(BLACK))
         g.play_game()
