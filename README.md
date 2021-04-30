@@ -14,12 +14,12 @@ Currently I have implemented a chess engine that can run a game (located in Code
 
 The chess board is being 3D printed, made up of 24 components, laid out as below. 
 
-<img src="https://user-images.githubusercontent.com/30397441/116361985-ea796980-a844-11eb-8eb4-53a6e09a23e4.png" width=700>
+<img src="https://user-images.githubusercontent.com/30397441/116361985-ea796980-a844-11eb-8eb4-53a6e09a23e4.png" width=500>
 
 Each of these pieces was designed using Autodesk Inventor (files in Board/Pieces)[detection_schematic.pdf](https://github.com/lkamols/chess/files/6402259/detection_schematic.pdf)
  and was then 3D printed, they look like this. 
 
-<img src="https://user-images.githubusercontent.com/30397441/116362643-9cb13100-a845-11eb-9ae9-30a46c50e769.jpg" width=700>
+<img src="https://user-images.githubusercontent.com/30397441/116362643-9cb13100-a845-11eb-9ae9-30a46c50e769.jpg" width=500>
 
 These then interlock to form the whole board, there are holes throughout which have metal rods to provide structural support.
 
@@ -34,11 +34,11 @@ A circuit schematic for the piece detection circuit is shown below. This makes u
 ## Reed Switches
 I originally bought some reed switches for piece detection, but these don't work for what I need. The reason for this is the magnetic field orientation required. To move the pieces later with an electromagnet, they need to have the north/south poles vertically. But the only way to reliably execute this with a reed switch is to orient them vertically, which would make the board thick and I didn't want to do that, so I designed my own reed switches, shown below. These reed switches are contained in the same compartment as the neopixel LED to save space.
 
-<img src="https://user-images.githubusercontent.com/30397441/116365038-324dc000-a848-11eb-8a7f-823a1e1ac13c.jpg">
+<img src="https://user-images.githubusercontent.com/30397441/116365038-324dc000-a848-11eb-8a7f-823a1e1ac13c.jpg" width=500>
 
 The small long component is a strip of iron I got from pulling apart an old transformer with a piece of copper tape on one side. This is placed in the other compartment next to the LED (but cannot ever touch the LED because of its shape). This is then glued to the bottom of the other, flatter piece as shown below.
 
-<img src="https://user-images.githubusercontent.com/30397441/116365683-d5063e80-a848-11eb-90e3-92ca4236f523.jpg">
+<img src="https://user-images.githubusercontent.com/30397441/116365683-d5063e80-a848-11eb-90e3-92ca4236f523.jpg" width=500>
 
 This is then placed into the chess board facing the opposite way. When a magnet is placed on the top surface, the metal strip is attracted to it, and completes the circuit, allowing current to flow through. If there is no magnet nearby the piece of iron strip falls back down with gravity and disconnects the circuit. In practice this has been very reliable, and does not depend at all on the orientation of the magnet, which fixes the problem with an existing reed switch.
 
@@ -62,7 +62,7 @@ I intend on building a 3D printer style movement system under the board which mo
 ## Chess Pieces
 Using Autodesk Inventor I have designed my own chess pieces, I went for a quite minimalistic theme, they are shown below and can be found in Board/Chess-Pieces.
 
-<img src="https://user-images.githubusercontent.com/30397441/116634884-abf8c180-a9a0-11eb-9d69-ee920af4fe73.png">
+<img src="https://user-images.githubusercontent.com/30397441/116634884-abf8c180-a9a0-11eb-9d69-ee920af4fe73.png" width=500>
 
 They each have a small compartment at the bottom to insert a magnet, the magnets being used are rectangular floristry magnets.
 
